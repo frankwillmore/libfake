@@ -5,7 +5,7 @@ SYNOPSIS
      LD_PRELOAD=/path/to/libfake.so.1 CMD [args ...]
 
 DESCRIPTION
-     Libfake overwrites system / library calls with fake ones.
+     Libfake overrides system / library calls with fake ones.
 
      Current implemented functions:
           struct passwd *getpwuid(uid_t);
@@ -13,6 +13,9 @@ DESCRIPTION
      Environment variables are used for supplying fake results.
      The fake getpwuid(3) uses LOGNAME, GID, GECOS, HOME, and SHELL,
      to initialize the passwd structure.
+
+     The library prints out diagnostic information to stderr,
+     when the environment variable, VERBOSE_LIBFAKE, is set.
 
 SEE ALSO
      getpwuid(3)

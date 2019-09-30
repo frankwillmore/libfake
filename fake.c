@@ -2,6 +2,7 @@
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 static char *proccmd(void);
 
@@ -20,49 +21,50 @@ struct passwd *
 getpwuid(uid_t uid)
 {
 	char *fake_name = getenv("LOGNAME");
-	char *gid = getenv("GID");
-	char *gecos = getenv("GECOS");
-	char *home = getenv("HOME");
-	char *shell = getenv("SHELL");
 	if(fake_name)
 		fake_pwd_struct.pw_name = fake_name;
+	char *gid = getenv("GID");
 	if(gid)
 		fake_pwd_struct.pw_gid = atoi(gid);
+	char *gecos = getenv("GECOS");
 	if(gecos)
 		fake_pwd_struct.pw_gecos = gecos;
+	char *home = getenv("HOME");
 	if(home)
 		fake_pwd_struct.pw_dir = home;
+	char *shell = getenv("SHELL");
 	if(shell)
 		fake_pwd_struct.pw_shell = shell;
 	fake_pwd_struct.pw_uid = uid;
-	fprintf(stderr, "fake getpwuid: called from\n"
-		"%s\n"
-		"providing ->\n"
-		"{\n"
-		"	.pw_name = \"%s\",\n"
-		"	.pw_passwd = \"%s\",\n"
-		"	.pw_gid = \"%d\",\n"
-		"	.pw_uid = \"%d\",\n"
-		"	.pw_gecos = \"%s\",\n"
-		"	.pw_dir = \"%s\",\n"
-		"	.pw_shell = \"%s\",\n"
-		"}\n",
-		proccmd(),
-		fake_pwd_struct.pw_name,
-		fake_pwd_struct.pw_passwd,
-		fake_pwd_struct.pw_gid,
-		fake_pwd_struct.pw_uid,
-		fake_pwd_struct.pw_gecos,
-		fake_pwd_struct.pw_dir,
-		fake_pwd_struct.pw_shell);
+	if(getenv("VERBOSE_LIBFAKE"))
+		fprintf(stderr, "fake getpwuid: called from\n"
+			"%s\n"
+			"providing ->\n"
+			"{\n"
+			"	.pw_name = \"%s\",\n"
+			"	.pw_passwd = \"%s\",\n"
+			"	.pw_gid = \"%d\",\n"
+			"	.pw_uid = \"%d\",\n"
+			"	.pw_gecos = \"%s\",\n"
+			"	.pw_dir = \"%s\",\n"
+			"	.pw_shell = \"%s\",\n"
+			"}\n",
+			proccmd(),
+			fake_pwd_struct.pw_name,
+			fake_pwd_struct.pw_passwd,
+			fake_pwd_struct.pw_gid,
+			fake_pwd_struct.pw_uid,
+			fake_pwd_struct.pw_gecos,
+			fake_pwd_struct.pw_dir,
+			fake_pwd_struct.pw_shell);
 	return &fake_pwd_struct;
 }
 
 static char *
 proccmd()
 {
-	const size_t N = 1024;
-	static char cmd[N];
+	static char cmd[1024];
+	const size_t N = sizeof cmd / sizeof cmd[0];
 	size_t p = snprintf(cmd, N, "[%d] ", getpid());
 	if(p >= N)
 		return cmd;
