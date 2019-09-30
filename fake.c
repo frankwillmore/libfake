@@ -26,6 +26,8 @@ getpwuid(uid_t uid)
 	char *gid = getenv("GID");
 	if(gid)
 		fake_pwd_struct.pw_gid = atoi(gid);
+	else
+		fake_pwd_struct.pw_gid = getgid();
 	char *gecos = getenv("GECOS");
 	if(gecos)
 		fake_pwd_struct.pw_gecos = gecos;
