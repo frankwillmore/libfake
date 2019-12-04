@@ -3,8 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <errno.h>
+#include <string.h>
 
-static char *proccmd(void);
+static char *proccmd(char *buf, size_t bufsize);
 
 static struct passwd fake_pwd_struct =
 {
@@ -17,29 +19,12 @@ static struct passwd fake_pwd_struct =
 	.pw_shell = "/fake_shell"
 };
 
-struct passwd *
-getpwuid(uid_t uid)
+void
+verbose(char *restrict name, struct passwd *pwd)
 {
-	char *fake_name = getenv("LOGNAME");
-	if(fake_name)
-		fake_pwd_struct.pw_name = fake_name;
-	char *gid = getenv("GID");
-	if(gid)
-		fake_pwd_struct.pw_gid = atoi(gid);
-	else
-		fake_pwd_struct.pw_gid = getgid();
-	char *gecos = getenv("GECOS");
-	if(gecos)
-		fake_pwd_struct.pw_gecos = gecos;
-	char *home = getenv("HOME");
-	if(home)
-		fake_pwd_struct.pw_dir = home;
-	char *shell = getenv("SHELL");
-	if(shell)
-		fake_pwd_struct.pw_shell = shell;
-	fake_pwd_struct.pw_uid = uid;
+	char buffer[1024];
 	if(getenv("VERBOSE_LIBFAKE"))
-		fprintf(stderr, "fake getpwuid: called from\n"
+		fprintf(stderr, "fake %s: called from\n"
 			"%s\n"
 			"providing ->\n"
 			"{\n"
@@ -51,22 +36,84 @@ getpwuid(uid_t uid)
 			"	.pw_dir = \"%s\",\n"
 			"	.pw_shell = \"%s\",\n"
 			"}\n",
-			proccmd(),
-			fake_pwd_struct.pw_name,
-			fake_pwd_struct.pw_passwd,
-			fake_pwd_struct.pw_gid,
-			fake_pwd_struct.pw_uid,
-			fake_pwd_struct.pw_gecos,
-			fake_pwd_struct.pw_dir,
-			fake_pwd_struct.pw_shell);
+			name,
+			proccmd(buffer, sizeof buffer / sizeof buffer[0]),
+			pwd->pw_name,
+			pwd->pw_passwd,
+			pwd->pw_gid,
+			pwd->pw_uid,
+			pwd->pw_gecos,
+			pwd->pw_dir,
+			pwd->pw_shell);
+}
+
+static void
+getpwuid_impl(uid_t uid, struct passwd *pwd)
+{
+	char *fake_name = getenv("LOGNAME");
+	if(fake_name)
+		pwd->pw_name = fake_name;
+	else
+		pwd->pw_name = fake_pwd_struct.pw_name;
+	char *gid = getenv("GID");
+	if(gid)
+		pwd->pw_gid = atoi(gid);
+	else
+		pwd->pw_gid = getgid();
+	char *gecos = getenv("GECOS");
+	if(gecos)
+		pwd->pw_gecos = gecos;
+	else
+		pwd->pw_gecos = fake_pwd_struct.pw_gecos;
+	char *home = getenv("HOME");
+	if(home)
+		pwd->pw_dir = home;
+	else
+		pwd->pw_dir = fake_pwd_struct.pw_dir;
+	char *shell = getenv("SHELL");
+	if(shell)
+		pwd->pw_shell = shell;
+	else
+		pwd->pw_shell = fake_pwd_struct.pw_shell;
+	pwd->pw_uid = uid;
+}
+
+struct passwd *
+getpwuid(uid_t uid)
+{
+	getpwuid_impl(uid, &fake_pwd_struct);
+	verbose("getpwuid", &fake_pwd_struct);
 	return &fake_pwd_struct;
 }
 
-static char *
-proccmd()
+int
+getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
+	size_t bufsize, struct passwd **result)
 {
-	static char cmd[1024];
-	const size_t N = sizeof cmd / sizeof cmd[0];
+	getpwuid_impl(uid, pwd);
+	verbose("getpwuid_r", pwd);
+	int s = snprintf(buffer, bufsize, "%s%c%s%c%s%c%s%c%s",
+		pwd->pw_name, 0,
+		pwd->pw_passwd, 0,
+		pwd->pw_gecos, 0,
+		pwd->pw_dir, 0,
+		pwd->pw_shell);
+	if(s < 0)
+		return EIO;
+	if((size_t)s >= bufsize)
+		return ERANGE;
+	pwd->pw_name = buffer; buffer += strlen(pwd->pw_name) + 1;
+	pwd->pw_passwd = buffer; buffer += strlen(pwd->pw_passwd) + 1;
+	pwd->pw_gecos = buffer; buffer += strlen(pwd->pw_gecos) + 1;
+	pwd->pw_dir = buffer; buffer += strlen(pwd->pw_dir) + 1;
+	pwd->pw_shell = buffer;
+	*result = pwd;
+	return 0;
+}
+
+static char *
+proccmd(char *cmd, size_t N)
+{
 	size_t p = snprintf(cmd, N, "[%d] ", getpid());
 	if(p >= N)
 		return cmd;

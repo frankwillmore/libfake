@@ -8,7 +8,9 @@ DESCRIPTION
      Libfake overrides system / library calls with fake ones.
 
      Current implemented functions:
-          struct passwd *getpwuid(uid_t);
+         struct passwd *getpwuid(uid_t);
+         int getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
+                        size_t bufsize, struct passwd **result)
 
      Environment variables are used for supplying fake results.
      The fake getpwuid(3) uses LOGNAME, GID, GECOS, HOME, and SHELL,
@@ -18,7 +20,7 @@ DESCRIPTION
      when the environment variable, VERBOSE_LIBFAKE, is set.
 
 SEE ALSO
-     getpwuid(3)
+     getpwuid(3), getpwuid_r(3)
 
 BUGS
      Only works with executables that use system ld.so facilities.
