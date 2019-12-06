@@ -135,20 +135,34 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
 /* FTW: Search the member string of CSV, 
 	grab the addresses where each name starts, 
 	and then flip the comma to a NULL so as to terminate each string */
-static void translate_member_string_to_array(char* members[], char* buffer)
+static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 {
-	for (char* p_char = buffer, int n_members=0; *p_char != '\0'; p_char++) 
-	{	
-		if (*p_char == ',') 
-		{  
-			members[n_members++] = p_char;
-			n_members++;
-			assert(n_members < MAX_MEMBERS_PER_GROUP);
-			*p_char = '\0'; 
-		}
+	/* Handle case of empty list */
+	if ((*buffer) == '\0')
+	{
+		members[0] = NULL; 
+		return;
+	}
+
+	members[0] = buffer;
+
+	/* Walk the buffer, capture members, and flip commas to terminators */
+	for 
+	(
+		char* p_char = buffer+1, int n_members=1;
+		*p_char != '\0'; 
+		p_char++
+	) 
+	if (*p_char == ',') 
+	{  
+		members[n_members++] = p_char;
+		n_members++;
+		assert(n_members < MAX_MEMBERS_PER_GROUP);
+		*p_char = '\0'; 
 	}
 }
 
+/* 	Populate fields of grp, except for member list */
 static void
 getgrgid_impl(gid_t gid, struct group *grp)
 {
@@ -162,15 +176,9 @@ getgrgid_impl(gid_t gid, struct group *grp)
 
 	grp->gr_gid = gid;
 
-	/* Group members */
-
-	char *group_members = getenv("GROUP_MEMBERS"); 
-	translate_member_string_to_array(grp->gr_mem, group_members);
-
 //	char* member;
 //	char* rest = getenv("GROUP_MEMBERS");
 //	while ((member = strtok_r(rest, ",", &rest))) printf("Got group member: %s\n", member); 
-// for now , just dump names to stdio
 }
 
 struct group *
@@ -178,9 +186,10 @@ getgrgid(gid_t gid)
 {
 	/* First copy group list from environment to our buffer */
 	strncpy(getenv("GROUP_MEMBERS"), fake_mems_buffer, FAKE_MEMS_BUFFER_SIZE);
-//FTW: do we need to catch any exit codes?
+	/* If there are more members than room in the buffer, they're lost. */
+
 	/* Then slice it into strings, grabbing pointers as we go */
-	translate_member_string_to_array(fake_group_struct.gr_mem, fake_mems_buffer);
+	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, fake_mems_buffer);
 
 	getgrgid_impl(gid, &fake_group_struct);
 //	verbose("getgrgid", &fake_group_struct);
@@ -214,14 +223,11 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	grp->gr_name = buffer; buffer += strlen(pwd->pw_name) + 1;
 	grp->gr_passwd = buffer; buffer += strlen(pwd->pw_passwd) + 1;
 	grp->gr_gid = buffer; buffer += strlen(pwd->pw_dir) + 1;
-//	grp->pw_shell = buffer;
-// now harvest
-	translate_member_string_to_array(fake_group_struct,gr_mem, buffer);
+	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, buffer);
 	
 	*result = grp;
 	return 0;
 }
-// \FTW
 
 static char *
 proccmd(char *cmd, size_t N)
