@@ -18,6 +18,9 @@ all:	${LIBS}
 lib%.so.${SONAME}:	%.o
 	${MOD} ; ${CC} -o $@ -Wl,-soname,$@ ${LDFLAGS} ${LIB_LDFLAGS} $< ${LDADD}
 
+test:	test.c
+	${CC} ${CFLAGS} test.c -o test
+
 clean:
 	@rm -f ${LIBS_OBJ} ${LIBS}
 

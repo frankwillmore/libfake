@@ -144,26 +144,21 @@ static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 		return;
 	}
 
-	members[0] = buffer;
-
-	int n_members = 1;
-	/* Walk the buffer, capture members, and flip commas to terminators */
-	for 
-	(
-		char* p_char = buffer + 1;
-		*p_char != '\0'; 
-		p_char++
-	) 
+	int n_members = 0;
+	members[n_members++] = buffer;
+	char* p_char = buffer;
+	while(*(++p_char) != '\0') 
 	if (*p_char == ',') 
 	{  
-		members[n_members++] = p_char;
-		n_members++;
-		assert(n_members < MAX_MEMBERS_PER_GROUP);
 		*p_char = '\0'; 
+		members[n_members++] = ++p_char;
+		assert(n_members < MAX_MEMBERS_PER_GROUP);
 	}
+printf("n_members = %d\n", n_members);
+for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
 }
 
-/* 	Populate fields of grp, except for member list */
+/* Populate fields of grp, except for member list */
 static void
 getgrgid_impl(gid_t gid, struct group *grp)
 {
@@ -176,10 +171,6 @@ getgrgid_impl(gid_t gid, struct group *grp)
 	grp->gr_passwd = NULL; /* not a required field */
 
 	grp->gr_gid = gid;
-
-//	char* member;
-//	char* rest = getenv("GROUP_MEMBERS");
-//	while ((member = strtok_r(rest, ",", &rest))) printf("Got group member: %s\n", member); 
 }
 
 struct group *
@@ -201,6 +192,7 @@ int
 getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	size_t bufsize, struct group **result)
 {
+printf("entering getgrgid_r\n");
 	getgrgid_impl(gid, grp);
 //	verbose("getpwuid_r", pwd);
 
@@ -208,11 +200,11 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 		Later, print to buffer and run the harvester against that buffer. 
 	*/
 	char* csv_members = getenv("GROUP_MEMBERS");
+//printf("get members %s\n", csv_members);
 
-	int s = snprintf(buffer, bufsize, "%s%c%s%c%d%c%s",
+	int s = snprintf(buffer, bufsize, "%s%c%s%c%s",
 		grp->gr_name, 0,
 		grp->gr_passwd, 0,
-		grp->gr_gid, 0,
 		csv_members
 		);
 	if(s < 0)
@@ -220,10 +212,8 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	if((size_t)s >= bufsize)
 		return ERANGE;
 
-// process the csv inside the buffer and grab the tokens
 	grp->gr_name = buffer; buffer += strlen(grp->gr_name) + 1;
 	grp->gr_passwd = buffer; buffer += strlen(grp->gr_passwd) + 1;
-//	grp->gr_gid = buffer; buffer += strlen(grp->gr_gid) + 1;
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, buffer);
 	
 	*result = grp;
