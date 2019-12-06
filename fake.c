@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #define MAX_MEMBERS_PER_GROUP 16384;
+#define FAKE_MEMS_BUFFER_SIZE 65536;
 
 static char *proccmd(char *buf, size_t bufsize);
 
@@ -24,8 +25,11 @@ static struct passwd fake_pwd_struct =
 	.pw_shell = "/fake_shell"
 };
 
-//static char* fake_mems[] = {"huey", "louie", "dewey"};
+/* A set of pointers into the names in the fake_mems_buffer */
 static char* fake_mems[MAX_MEMBERS_PER_GROUP];
+
+/* The values are obtained from the environment and should be treated as immutable, so we need to make a copy here. */
+static char* fake_mems_buffer[FAKE_MEMS_BUFFER_SIZE];
 
 static struct group fake_group_struct =
 {
@@ -130,7 +134,7 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
 
 /* FTW: Search the member string of CSV, 
 	grab the addresses where each name starts, 
-	and then flip the comma to a NULL so as to terminate the string */
+	and then flip the comma to a NULL so as to terminate each string */
 static void translate_member_string_to_array(char* members[], char* buffer)
 {
 	for (char* p_char = buffer, int n_members=0; *p_char != '\0'; p_char++) 
@@ -172,6 +176,12 @@ getgrgid_impl(gid_t gid, struct group *grp)
 struct group *
 getgrgid(gid_t gid)
 {
+	/* First copy group list from environment to our buffer */
+	strncpy(getenv("GROUP_MEMBERS"), fake_mems_buffer, FAKE_MEMS_BUFFER_SIZE);
+//FTW: do we need to catch any exit codes?
+	/* Then slice it into strings, grabbing pointers as we go */
+	translate_member_string_to_array(fake_group_struct.gr_mem, fake_mems_buffer);
+
 	getgrgid_impl(gid, &fake_group_struct);
 //	verbose("getgrgid", &fake_group_struct);
 	return &fake_group_struct;
@@ -183,24 +193,32 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 {
 	getgrgid_impl(gid, grp);
 //	verbose("getpwuid_r", pwd);
-	char group_members_buffer[1024];
-        int member_number = 0;
-	int s = snprintf(buffer, bufsize, "%s%c%s%c%s%c%s%c%s",
-		pwd->pw_name, 0,
-		pwd->pw_passwd, 0,
-		pwd->pw_gecos, 0,
-		pwd->pw_dir, 0,
-		pwd->pw_shell);
+
+	/*	Get the group member list from environment. 
+		Later, print to buffer and run the harvester against that buffer. 
+	*/
+	char* csv_members = getenv("GROUP_MEMBERS");
+
+	int s = snprintf(buffer, bufsize, "%s%c%s%c%s%c%s",
+		grp->gr_name, 0,
+		grp->gr_passwd, 0,
+		grp->gr_gid, 0,
+		csv_members
+		);
 	if(s < 0)
 		return EIO;
 	if((size_t)s >= bufsize)
 		return ERANGE;
-	pwd->pw_name = buffer; buffer += strlen(pwd->pw_name) + 1;
-	pwd->pw_passwd = buffer; buffer += strlen(pwd->pw_passwd) + 1;
-	pwd->pw_gecos = buffer; buffer += strlen(pwd->pw_gecos) + 1;
-	pwd->pw_dir = buffer; buffer += strlen(pwd->pw_dir) + 1;
-	pwd->pw_shell = buffer;
-	*result = pwd;
+
+// process the csv inside the buffer and grab the tokens
+	grp->gr_name = buffer; buffer += strlen(pwd->pw_name) + 1;
+	grp->gr_passwd = buffer; buffer += strlen(pwd->pw_passwd) + 1;
+	grp->gr_gid = buffer; buffer += strlen(pwd->pw_dir) + 1;
+//	grp->pw_shell = buffer;
+// now harvest
+	translate_member_string_to_array(fake_group_struct,gr_mem, buffer);
+	
+	*result = grp;
 	return 0;
 }
 // \FTW
