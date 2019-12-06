@@ -5,6 +5,11 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/types.h>
+#include <grp.h>
+#include <assert.h>
+
+#define MAX_MEMBERS_PER_GROUP 16384;
 
 static char *proccmd(char *buf, size_t bufsize);
 
@@ -17,6 +22,17 @@ static struct passwd fake_pwd_struct =
 	.pw_gecos = "fake gecos",
 	.pw_dir = "/fake_home/",
 	.pw_shell = "/fake_shell"
+};
+
+//static char* fake_mems[] = {"huey", "louie", "dewey"};
+static char* fake_mems[MAX_MEMBERS_PER_GROUP];
+
+static struct group fake_group_struct =
+{
+	.gr_name = "fake_name",
+	.gr_passwd = "x",
+	.gr_gid = -1,
+	.gr_mem = fake_mems
 };
 
 void
@@ -45,6 +61,7 @@ verbose(char *restrict name, struct passwd *pwd)
 			pwd->pw_gecos,
 			pwd->pw_dir,
 			pwd->pw_shell);
+//FTW: add bits for group 
 }
 
 static void
@@ -110,6 +127,83 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
 	*result = pwd;
 	return 0;
 }
+
+/* FTW: Search the member string of CSV, 
+	grab the addresses where each name starts, 
+	and then flip the comma to a NULL so as to terminate the string */
+static void translate_member_string_to_array(char* members[], char* buffer)
+{
+	for (char* p_char = buffer, int n_members=0; *p_char != '\0'; p_char++) 
+	{	
+		if (*p_char == ',') 
+		{  
+			members[n_members++] = p_char;
+			n_members++;
+			assert(n_members < MAX_MEMBERS_PER_GROUP);
+			*p_char = '\0'; 
+		}
+	}
+}
+
+static void
+getgrgid_impl(gid_t gid, struct group *grp)
+{
+	char *group_name = getenv("GROUP_NAME");
+	if(group_name)
+		grp->gr_name = group_name;
+	else
+		grp->gr_name = fake_group_struct.gr_name;
+
+	grp->gr_passwd = NULL; /* not a required field */
+
+	grp->gr_gid = gid;
+
+	/* Group members */
+
+	char *group_members = getenv("GROUP_MEMBERS"); 
+	translate_member_string_to_array(grp->gr_mem, group_members);
+
+//	char* member;
+//	char* rest = getenv("GROUP_MEMBERS");
+//	while ((member = strtok_r(rest, ",", &rest))) printf("Got group member: %s\n", member); 
+// for now , just dump names to stdio
+}
+
+struct group *
+getgrgid(gid_t gid)
+{
+	getgrgid_impl(gid, &fake_group_struct);
+//	verbose("getgrgid", &fake_group_struct);
+	return &fake_group_struct;
+}
+
+int
+getgrgid_r(gid_t gid, struct group *grp, char *buffer,
+	size_t bufsize, struct group **result)
+{
+	getgrgid_impl(gid, grp);
+//	verbose("getpwuid_r", pwd);
+	char group_members_buffer[1024];
+        int member_number = 0;
+	int s = snprintf(buffer, bufsize, "%s%c%s%c%s%c%s%c%s",
+		pwd->pw_name, 0,
+		pwd->pw_passwd, 0,
+		pwd->pw_gecos, 0,
+		pwd->pw_dir, 0,
+		pwd->pw_shell);
+	if(s < 0)
+		return EIO;
+	if((size_t)s >= bufsize)
+		return ERANGE;
+	pwd->pw_name = buffer; buffer += strlen(pwd->pw_name) + 1;
+	pwd->pw_passwd = buffer; buffer += strlen(pwd->pw_passwd) + 1;
+	pwd->pw_gecos = buffer; buffer += strlen(pwd->pw_gecos) + 1;
+	pwd->pw_dir = buffer; buffer += strlen(pwd->pw_dir) + 1;
+	pwd->pw_shell = buffer;
+	*result = pwd;
+	return 0;
+}
+// \FTW
 
 static char *
 proccmd(char *cmd, size_t N)
