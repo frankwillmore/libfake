@@ -9,8 +9,8 @@
 #include <grp.h>
 #include <assert.h>
 
-#define MAX_MEMBERS_PER_GROUP 16384;
-#define FAKE_MEMS_BUFFER_SIZE 65536;
+#define MAX_MEMBERS_PER_GROUP 16384
+#define FAKE_MEMS_BUFFER_SIZE 65536
 
 static char *proccmd(char *buf, size_t bufsize);
 
@@ -146,10 +146,11 @@ static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 
 	members[0] = buffer;
 
+	int n_members = 1;
 	/* Walk the buffer, capture members, and flip commas to terminators */
 	for 
 	(
-		char* p_char = buffer+1, int n_members=1;
+		char* p_char = buffer + 1;
 		*p_char != '\0'; 
 		p_char++
 	) 
@@ -220,9 +221,9 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 		return ERANGE;
 
 // process the csv inside the buffer and grab the tokens
-	grp->gr_name = buffer; buffer += strlen(pwd->pw_name) + 1;
-	grp->gr_passwd = buffer; buffer += strlen(pwd->pw_passwd) + 1;
-	grp->gr_gid = buffer; buffer += strlen(pwd->pw_dir) + 1;
+	grp->gr_name = buffer; buffer += strlen(grp->gr_name) + 1;
+	grp->gr_passwd = buffer; buffer += strlen(grp->gr_passwd) + 1;
+	grp->gr_gid = buffer; buffer += strlen(grp->gr_gid) + 1;
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, buffer);
 	
 	*result = grp;
