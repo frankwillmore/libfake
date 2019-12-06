@@ -29,7 +29,7 @@ static struct passwd fake_pwd_struct =
 static char* fake_mems[MAX_MEMBERS_PER_GROUP];
 
 /* The values are obtained from the environment and should be treated as immutable, so we need to make a copy here. */
-static char* fake_mems_buffer[FAKE_MEMS_BUFFER_SIZE];
+static char fake_mems_buffer[FAKE_MEMS_BUFFER_SIZE];
 
 static struct group fake_group_struct =
 {
@@ -209,7 +209,7 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	*/
 	char* csv_members = getenv("GROUP_MEMBERS");
 
-	int s = snprintf(buffer, bufsize, "%s%c%s%c%s%c%s",
+	int s = snprintf(buffer, bufsize, "%s%c%s%c%d%c%s",
 		grp->gr_name, 0,
 		grp->gr_passwd, 0,
 		grp->gr_gid, 0,
@@ -223,7 +223,7 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 // process the csv inside the buffer and grab the tokens
 	grp->gr_name = buffer; buffer += strlen(grp->gr_name) + 1;
 	grp->gr_passwd = buffer; buffer += strlen(grp->gr_passwd) + 1;
-	grp->gr_gid = buffer; buffer += strlen(grp->gr_gid) + 1;
+//	grp->gr_gid = buffer; buffer += strlen(grp->gr_gid) + 1;
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, buffer);
 	
 	*result = grp;
