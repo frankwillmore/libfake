@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <grp.h>
 
+#include <malloc.h>
 #include <errno.h>
 
 //static char* mems[] = {"users", "boozers", "losers"};
@@ -12,7 +13,7 @@ static char* mems[256];
 static struct group fake_group_struct =
 {
         .gr_name = "fake_name",
-        .gr_passwd = NULL,
+        .gr_passwd = "*",
         .gr_gid = -1,
         .gr_mem = mems
 };
@@ -22,22 +23,27 @@ int main()
 {
     //gid_t gid = getegid();
     //printf("Got egid = %ld\n", gid);
+    
     gid_t gid = (gid_t)1014;
-    printf("Using gid = %ld\n", gid);
+    printf("Attempting to run getgrgid_r() for gid %ld:\n", (long int)gid);
 
     size_t buffer_size = 65536;
-    char *buf =malloc(buffer_size); 
+    char* buf = (char*) malloc(buffer_size); 
     
     struct group* result;
     int retval = getgrgid_r(gid, &fake_group_struct, buf, buffer_size, &result);
 
-    printf("getgrgid_r retval = %d\n", retval);
+    if (retval == 0) printf("Success. Result = ->%lu<-\n", (unsigned long)result);
+    printf("Information retrieved: \n\n");
 
     printf("fake_group_struct.gr_name: %s\n", fake_group_struct.gr_name);
-    printf("fake_group_struct.gr_mem: %ld\n", fake_group_struct.gr_mem);
-    printf("fake_group_struct.gr_mem[0]: %s\n", fake_group_struct.gr_mem[0]);
-    printf("fake_group_struct.gr_mem[1]: %s\n", fake_group_struct.gr_mem[1]);
-    printf("fake_group_struct.gr_mem[2]: %s\n", fake_group_struct.gr_mem[2]);
+    printf("fake_group_struct.gr_passwd: %s\n", fake_group_struct.gr_passwd);
+    printf("fake_group_struct.gr_gid: %u\n", (unsigned)fake_group_struct.gr_gid);
+
+    printf("Group members:\n\n");
+
+    for (int member_number = 0; fake_group_struct.gr_mem[member_number] != NULL; member_number++)
+        printf("fake_group_struct.gr_mem[%d]: %s\n", member_number, fake_group_struct.gr_mem[member_number]);
 
     free(buf);
 

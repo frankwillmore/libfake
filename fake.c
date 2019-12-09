@@ -173,7 +173,8 @@ getgrgid_impl(gid_t gid, struct group *grp)
 	else
 		grp->gr_name = fake_group_struct.gr_name;
 
-	grp->gr_passwd = NULL; /* not a required field */
+//grp->gr_passwd = NULL; /* not a required field */
+	grp->gr_passwd = "*"; /* not a required field */
 
 	grp->gr_gid = gid;
 
