@@ -137,25 +137,30 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
 	and then flip the comma to a NULL so as to terminate each string */
 static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 {
-	/* Handle case of empty list */
-	if ((*buffer) == '\0')
-	{
-		members[0] = NULL; 
-		return;
-	}
+	members[0] = buffer; 
 
-	int n_members = 0;
-	members[n_members++] = buffer;
+	/* Handle case of empty list */
+	if ((*buffer) == '\0') return;
+
+	/* otherwise we have at least one member */
+	int n_members = 1;
+
 	char* p_char = buffer;
-	while(*(++p_char) != '\0') 
+	//while(*(++p_char) != '\0') 
+	while(*(p_char++) != '\0') 
 	if (*p_char == ',') 
 	{  
 		*p_char = '\0'; 
 		members[n_members++] = ++p_char;
+//printf("Got member %s\n", p_char);
 		assert(n_members < MAX_MEMBERS_PER_GROUP);
 	}
 printf("n_members = %d\n", n_members);
-for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
+printf("%s\n", members[0]);
+printf("%s\n", members[1]);
+printf("%s\n", members[2]);
+printf("%s\n", members[3]);
+//for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
 }
 
 /* Populate fields of grp, except for member list */
@@ -171,6 +176,8 @@ getgrgid_impl(gid_t gid, struct group *grp)
 	grp->gr_passwd = NULL; /* not a required field */
 
 	grp->gr_gid = gid;
+
+	grp->gr_mem = fake_group_struct.gr_mem;
 }
 
 struct group *
@@ -200,7 +207,6 @@ printf("entering getgrgid_r\n");
 		Later, print to buffer and run the harvester against that buffer. 
 	*/
 	char* csv_members = getenv("GROUP_MEMBERS");
-//printf("get members %s\n", csv_members);
 
 	int s = snprintf(buffer, bufsize, "%s%c%s%c%s",
 		grp->gr_name, 0,
@@ -208,14 +214,32 @@ printf("entering getgrgid_r\n");
 		csv_members
 		);
 	if(s < 0)
+	{
+		printf("ERROR: returning EIO: Got s = %d\n", s);
 		return EIO;
+	}
 	if((size_t)s >= bufsize)
+	{
+		printf("ERROR: returning ERANGE: Got s = %d\n", s);
 		return ERANGE;
+	}
 
 	grp->gr_name = buffer; buffer += strlen(grp->gr_name) + 1;
 	grp->gr_passwd = buffer; buffer += strlen(grp->gr_passwd) + 1;
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, buffer);
+// for (int i=0; i<5; i++) printf("%s\n", fake_group_struct.gr_mem[i]); // this works
+// The names are making it at least this far, but then something happens
+printf("gr_passwd = \"%s\"\n", grp->gr_passwd);
+printf("gr_name = \"%s\"\n", grp->gr_name);
+printf("gr_gid = %ld\n", grp->gr_gid);
+
+//.gr_name = "fake_name",
+//.gr_passwd = "x",
+//.gr_gid = -1,
+
+printf("leaving geggrgid_r\n");
 	
+// FTW: are the other members ok? Test out the whole struct group 
 	*result = grp;
 	return 0;
 }
