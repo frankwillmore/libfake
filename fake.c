@@ -40,7 +40,7 @@ static struct group fake_group_struct =
 };
 
 void
-verbose(char *restrict name, struct passwd *pwd)
+pwd_verbose(char *restrict name, struct passwd *pwd)
 {
 	char buffer[1024];
 	if(getenv("VERBOSE_LIBFAKE"))
@@ -65,7 +65,6 @@ verbose(char *restrict name, struct passwd *pwd)
 			pwd->pw_gecos,
 			pwd->pw_dir,
 			pwd->pw_shell);
-//FTW: add bits for group 
 }
 
 static void
@@ -103,7 +102,7 @@ struct passwd *
 getpwuid(uid_t uid)
 {
 	getpwuid_impl(uid, &fake_pwd_struct);
-	verbose("getpwuid", &fake_pwd_struct);
+	pwd_verbose("getpwuid", &fake_pwd_struct);
 	return &fake_pwd_struct;
 }
 
@@ -112,7 +111,7 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
 	size_t bufsize, struct passwd **result)
 {
 	getpwuid_impl(uid, pwd);
-	verbose("getpwuid_r", pwd);
+	pwd_verbose("getpwuid_r", pwd);
 	int s = snprintf(buffer, bufsize, "%s%c%s%c%s%c%s%c%s",
 		pwd->pw_name, 0,
 		pwd->pw_passwd, 0,
@@ -159,6 +158,34 @@ printf("n_members = %d\n", n_members);
 for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
 }
 
+void
+grp_verbose(char *restrict name, struct group *grp)
+{
+	char buffer[1024];
+	if(getenv("VERBOSE_LIBFAKE"))
+	{
+		fprintf(stderr, "fake %s: called from\n"
+			"%s\n"
+			"providing ->\n"
+			"{\n"
+			"	.gr_name = \"%s\",\n"
+			"	.gr_passwd = \"%s\",\n"
+			"	.gr_gid = \"%d\",\n"
+			"	.gr_mem = {\n",
+			name,
+			proccmd(buffer, sizeof buffer / sizeof buffer[0]),
+			grp->gr_name,
+			grp->gr_passwd,
+			grp->gr_gid
+			);
+		for (char** p_member=(grp->gr_mem); *p_member != NULL; p_member++) 
+		{
+			fprintf(stderr, "\t%s\n", *p_member);
+		}
+		fprintf(stderr, "}\n");
+	}
+}
+
 /* Populate fields of grp, except for member list */
 static void
 getgrgid_impl(gid_t gid, struct group *grp)
@@ -180,6 +207,8 @@ getgrgid_impl(gid_t gid, struct group *grp)
 struct group *
 getgrgid(gid_t gid)
 {
+	getgrgid_impl(gid, &fake_group_struct);
+
 	/* First copy group list from environment to our buffer */
 	strncpy(getenv("GROUP_MEMBERS"), fake_mems_buffer, FAKE_MEMS_BUFFER_SIZE);
 	/* If there are more members than room in the buffer, they're lost. */
@@ -187,8 +216,7 @@ getgrgid(gid_t gid)
 	/* Then slice it into strings, grabbing pointers as we go */
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, fake_mems_buffer);
 
-	getgrgid_impl(gid, &fake_group_struct);
-//	verbose("getgrgid", &fake_group_struct);
+	grp_verbose("getgrgid", &fake_group_struct);
 	return &fake_group_struct;
 }
 
@@ -196,9 +224,7 @@ int
 getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	size_t bufsize, struct group **result)
 {
-printf("entering getgrgid_r\n");
 	getgrgid_impl(gid, grp);
-//	verbose("getpwuid_r", pwd);
 
 	/*	Get the group member list from environment. 
 		Later, print to buffer and run the harvester against that buffer. 
@@ -224,17 +250,19 @@ printf("entering getgrgid_r\n");
 	grp->gr_name = buffer; buffer += strlen(grp->gr_name) + 1;
 	grp->gr_passwd = buffer; buffer += strlen(grp->gr_passwd) + 1;
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, buffer);
+
+	grp_verbose("getgrgid_r", grp);
 // for (int i=0; i<5; i++) printf("%s\n", fake_group_struct.gr_mem[i]); // this works
 // The names are making it at least this far, but then something happens
-printf("gr_passwd = \"%s\"\n", grp->gr_passwd);
-printf("gr_name = \"%s\"\n", grp->gr_name);
-printf("gr_gid = %ld\n", (long)grp->gr_gid);
+// printf("gr_passwd = \"%s\"\n", grp->gr_passwd);
+// printf("gr_name = \"%s\"\n", grp->gr_name);
+// printf("gr_gid = %ld\n", (long)grp->gr_gid);
 
 //.gr_name = "fake_name",
 //.gr_passwd = "x",
 //.gr_gid = -1,
 
-printf("leaving geggrgid_r\n");
+// printf("leaving getgrgid_r\n");
 	
 // FTW: are the other members ok? Test out the whole struct group 
 	*result = grp;
