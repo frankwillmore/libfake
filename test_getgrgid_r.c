@@ -1,14 +1,10 @@
 #include <stddef.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/types.h>
 #include <grp.h>
 #include <unistd.h>
-
 #include <malloc.h>
-#include <errno.h>
 
-//static char* mems[] = {"users", "boozers", "losers"};
 static char* mems[256];
 
 static struct group fake_group_struct =
@@ -19,12 +15,10 @@ static struct group fake_group_struct =
         .gr_mem = mems
 };
 
-//int main(int argc, char** argv)
 int main()
 {
     gid_t gid = getegid();
     printf("Got egid = %ld\n", (long)gid);
-    //gid_t gid = (gid_t)1014;
 
     printf("Attempting to run getgrgid_r() for gid %ld:\n", (long int)gid);
 
@@ -34,37 +28,23 @@ int main()
     struct group* result;
     int retval = getgrgid_r(gid, &fake_group_struct, buf, buffer_size, &result);
 
-    if (retval == 0) printf("Success for getgrgid_r(). Result = ->%lu<-\n", (unsigned long)result);
+    if (retval == 0) printf("Success for getgrgid_r().\n");
+
+    /* dump the actual data */
+
+    printf("got group name: %s\n", result->gr_name);
+    printf("got group passwd: %s\n", result->gr_passwd);
+    printf("got group gid: %ld\n", (long)result->gr_gid);
+    printf("got group members: \n");
+    //for (char* p_mem = (result->gr_mem)[0]; p_mem != NULL; p_mem++) printf("%ld\t%d\n", (long)p_mem, (int)*p_mem);
+    //for (char* p_mem = (result->gr_mem)[0]; p_mem != NULL; p_mem++) printf("\t%s\n", p_mem);
+
+    char** p_members = result->gr_mem;
+    while ((*p_members) != NULL) printf("\t%s\n", *p_members++);
+
+
+
     free(buf);
-
-    sleep(1);
-
-    printf("Running getgrgid() for gid %ld:\n", (long int)gid);
-
-    struct group* getgrgid_result = getgrgid(gid);
-
-    if (getgrgid_result != NULL) printf("Success for getgrgid(). Result = ->%lu<-\n", (unsigned long)getgrgid_result);
-    
-//    printf("Information retrieved: \n\n");
-
-//    printf("fake_group_struct.gr_name: %s\n", fake_group_struct.gr_name);
-//    printf("fake_group_struct.gr_passwd: %s\n", fake_group_struct.gr_passwd);
-//    printf("fake_group_struct.gr_gid: %u\n", (unsigned)fake_group_struct.gr_gid);
-
-//    printf("Group members:\n\n");
-
- //   for (int member_number = 0; fake_group_struct.gr_mem[member_number] != NULL; member_number++)
- //       printf("fake_group_struct.gr_mem[%d]: %s\n", member_number, fake_group_struct.gr_mem[member_number]);
-
-
-    return 0; 
+    return retval;
 }
 
-//    printf("result = %ld\n");
-//struct group *getgrgid(gid_t gid);
-//    char* token;
-//    char* rest = argv[1];
-    // Keep printing tokens while one of the 
-    // delimiters present in str[]. 
-//    while ((token = strtok_r(rest, ":", &rest))) 
-//        printf("%s\n", token); 

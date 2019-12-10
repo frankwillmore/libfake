@@ -25,11 +25,11 @@ static struct passwd fake_pwd_struct =
 	.pw_shell = "/fake_shell"
 };
 
+/* Values obtained from the environment are immutable, so we make a copy here. */
+static char fake_mems_buffer[FAKE_MEMS_BUFFER_SIZE];
+
 /* A set of pointers into the names in the fake_mems_buffer */
 static char* fake_mems[MAX_MEMBERS_PER_GROUP];
-
-/* The values are obtained from the environment and should be treated as immutable, so we need to make a copy here. */
-static char fake_mems_buffer[FAKE_MEMS_BUFFER_SIZE];
 
 static struct group fake_group_struct =
 {
@@ -131,7 +131,7 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
 	return 0;
 }
 
-/* FTW: Search the member string of CSV, 
+/*      Search the member string of CSV, 
 	grab the addresses where each name starts, 
 	and then flip the comma to a NULL so as to terminate each string */
 static void extract_members_and_stamp_terminators(char* members[], char* buffer)
@@ -203,6 +203,8 @@ getgrgid_impl(gid_t gid, struct group *grp)
 struct group *
 getgrgid(gid_t gid)
 {
+	if (getenv("VERBOSE_LIBFAKE")) fprintf(stderr, "getgrgid() called with gid = %ld\n", (long));
+
 	getgrgid_impl(gid, &fake_group_struct);
 
 	/* First copy group list from environment to our buffer */
@@ -221,6 +223,8 @@ int
 getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	size_t bufsize, struct group **result)
 {
+	if (getenv("VERBOSE_LIBFAKE")) fprintf(stderr, "getgrgid_r() called with gid = %ld\n", (long));
+
 	getgrgid_impl(gid, grp);
 
 	/*	Get the group member list from environment. 

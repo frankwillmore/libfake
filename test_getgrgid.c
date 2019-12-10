@@ -1,22 +1,9 @@
 #include <stddef.h>
 #include <stdio.h>
-#include <string.h>
+//#include <string.h>
 #include <sys/types.h>
 #include <grp.h>
-//#include <unistd.h>
-
-//#include <malloc.h>
-//#include <errno.h>
-
-static char* mems[256];
-
-static struct group fake_group_struct =
-{
-        .gr_name = "fake_name",
-        .gr_passwd = "*",
-        .gr_gid = -1,
-        .gr_mem = mems
-};
+#include <unistd.h>
 
 int main()
 {
@@ -27,7 +14,16 @@ int main()
 
     struct group* getgrgid_result = getgrgid(gid);
 
-    if (getgrgid_result != NULL) printf("Success for getgrgid(). Result = ->%lu<-\n", (unsigned long)getgrgid_result);
+    if (getgrgid_result != NULL)
+    {
+         printf("Success return code for getgrgid().\n");
+    }
     
-    return 0; 
+    printf("got group passwd: %s\n", getgrgid_result->gr_passwd);
+    printf("got group gid: %ld\n", (long)getgrgid_result->gr_gid);
+    printf("got group members: \n");
+    char** p_members = getgrgid_result->gr_mem;
+    while ((*p_members) != NULL) printf("\t%s\n", *p_members++);
+
+    return 0;
 }
