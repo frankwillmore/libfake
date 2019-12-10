@@ -151,11 +151,8 @@ static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 	{  
 		*p_char = '\0'; 
 		members[n_members++] = ++p_char;
-//printf("Got member %s\n", p_char);
 		assert(n_members < MAX_MEMBERS_PER_GROUP);
 	}
-// printf("n_members = %d\n", n_members);
-// for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
 }
 
 void
@@ -182,7 +179,7 @@ grp_verbose(char *restrict name, struct group *grp)
 		{
 			fprintf(stderr, "\t%s\n", *p_member);
 		}
-		fprintf(stderr, "}\n");
+		fprintf(stderr, "\t}\n}\n");
 	}
 }
 
@@ -196,7 +193,6 @@ getgrgid_impl(gid_t gid, struct group *grp)
 	else
 		grp->gr_name = fake_group_struct.gr_name;
 
-//grp->gr_passwd = NULL; /* not a required field */
 	grp->gr_passwd = "*"; /* not a required field */
 
 	grp->gr_gid = gid;
@@ -210,10 +206,9 @@ getgrgid(gid_t gid)
 	getgrgid_impl(gid, &fake_group_struct);
 
 	/* First copy group list from environment to our buffer */
-	char* csv_members = getenv("GROUP_MEMBERS");
-printf("Get csv: %s\n", csv_members);
-	strncpy(fake_mems_buffer, csv_members, FAKE_MEMS_BUFFER_SIZE);
 	/* If there are more members than room in the buffer, they're lost. */
+	char* csv_members = getenv("GROUP_MEMBERS");
+	strncpy(fake_mems_buffer, csv_members, FAKE_MEMS_BUFFER_SIZE);
 
 	/* Then slice it into strings, grabbing pointers as we go */
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, fake_mems_buffer);
@@ -254,19 +249,7 @@ getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	extract_members_and_stamp_terminators(fake_group_struct.gr_mem, buffer);
 
 	grp_verbose("getgrgid_r", grp);
-// for (int i=0; i<5; i++) printf("%s\n", fake_group_struct.gr_mem[i]); // this works
-// The names are making it at least this far, but then something happens
-// printf("gr_passwd = \"%s\"\n", grp->gr_passwd);
-// printf("gr_name = \"%s\"\n", grp->gr_name);
-// printf("gr_gid = %ld\n", (long)grp->gr_gid);
 
-//.gr_name = "fake_name",
-//.gr_passwd = "x",
-//.gr_gid = -1,
-
-// printf("leaving getgrgid_r\n");
-	
-// FTW: are the other members ok? Test out the whole struct group 
 	*result = grp;
 	return 0;
 }
