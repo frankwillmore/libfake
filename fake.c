@@ -232,7 +232,7 @@ printf("entering getgrgid_r\n");
 // The names are making it at least this far, but then something happens
 printf("gr_passwd = \"%s\"\n", grp->gr_passwd);
 printf("gr_name = \"%s\"\n", grp->gr_name);
-printf("gr_gid = %ld\n", grp->gr_gid);
+printf("gr_gid = %ld\n", (long)grp->gr_gid);
 
 //.gr_name = "fake_name",
 //.gr_passwd = "x",
