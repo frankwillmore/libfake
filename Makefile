@@ -30,7 +30,9 @@ check-preload:	test
 check-no-preload:	test
 	unset LD_PRELOAD && ./test
 
+check-both: check-preload check-no-preload
+
 clean:
 	@rm -f ${LIBS_OBJ} ${LIBS}
 
-.PHONY:	all clean
+.PHONY:	all clean check-preload check-no-preload

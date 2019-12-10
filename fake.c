@@ -156,11 +156,7 @@ static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 		assert(n_members < MAX_MEMBERS_PER_GROUP);
 	}
 printf("n_members = %d\n", n_members);
-printf("%s\n", members[0]);
-printf("%s\n", members[1]);
-printf("%s\n", members[2]);
-printf("%s\n", members[3]);
-//for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
+for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
 }
 
 /* Populate fields of grp, except for member list */
