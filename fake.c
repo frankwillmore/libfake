@@ -154,8 +154,8 @@ static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 //printf("Got member %s\n", p_char);
 		assert(n_members < MAX_MEMBERS_PER_GROUP);
 	}
-printf("n_members = %d\n", n_members);
-for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
+// printf("n_members = %d\n", n_members);
+// for (int i=0; i<n_members; i++) printf("%s\n", members[i]);
 }
 
 void
@@ -210,7 +210,9 @@ getgrgid(gid_t gid)
 	getgrgid_impl(gid, &fake_group_struct);
 
 	/* First copy group list from environment to our buffer */
-	strncpy(getenv("GROUP_MEMBERS"), fake_mems_buffer, FAKE_MEMS_BUFFER_SIZE);
+	char* csv_members = getenv("GROUP_MEMBERS");
+printf("Get csv: %s\n", csv_members);
+	strncpy(fake_mems_buffer, csv_members, FAKE_MEMS_BUFFER_SIZE);
 	/* If there are more members than room in the buffer, they're lost. */
 
 	/* Then slice it into strings, grabbing pointers as we go */

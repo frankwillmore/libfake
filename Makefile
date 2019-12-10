@@ -21,18 +21,25 @@ lib%.so.${SONAME}:	%.o
 #	${MOD} ; ${CC} -o $@ -Wl,-soname,$@ ${LDFLAGS} ${LIB_LDFLAGS} $< ${LDADD}
 	${CC} -o $@ -Wl,-soname,$@ ${LDFLAGS} ${LIB_LDFLAGS} $< ${LDADD}
 
-test:	test.c
-	${CC} ${CFLAGS} test.c -o test
+tests:	test_getgrgid test_getgrgid_r
 
-check-preload:	test
-	export LD_PRELOAD=`pwd`/libfake.so.1 && ./test
+test_getgrgid: test_getgrgid.c
+	${CC} ${CFLAGS} test_getgrgid.c -o test_getgrgid
 
-check-no-preload:	test
-	unset LD_PRELOAD && ./test
+test_getgrgid_r: test_getgrgid_r.c
+	${CC} ${CFLAGS} test_getgrgid_r.c -o test_getgrgid_r
+
+check-preload:tests
+	export LD_PRELOAD=`pwd`/libfake.so.1 && ./test_getgrgid
+	export LD_PRELOAD=`pwd`/libfake.so.1 && ./test_getgrgid_r
+
+check-no-preload: tests
+	unset LD_PRELOAD && ./test_getgrgid
+	unset LD_PRELOAD && ./test_getgrgid_r
 
 check-both: check-preload check-no-preload
 
 clean:
 	@rm -f ${LIBS_OBJ} ${LIBS}
 
-.PHONY:	all clean check-preload check-no-preload
+.PHONY:	all clean check-preload check-no-preload check-both
