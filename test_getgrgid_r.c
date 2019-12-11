@@ -36,8 +36,6 @@ int main()
     printf("got group passwd: %s\n", result->gr_passwd);
     printf("got group gid: %ld\n", (long)result->gr_gid);
     printf("got group members: \n");
-    //for (char* p_mem = (result->gr_mem)[0]; p_mem != NULL; p_mem++) printf("%ld\t%d\n", (long)p_mem, (int)*p_mem);
-    //for (char* p_mem = (result->gr_mem)[0]; p_mem != NULL; p_mem++) printf("\t%s\n", p_mem);
 
     char** p_members = result->gr_mem;
     while ((*p_members) != NULL) printf("\t%s\n", *p_members++);

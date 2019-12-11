@@ -34,7 +34,7 @@ static char* fake_mems[MAX_MEMBERS_PER_GROUP];
 static struct group fake_group_struct =
 {
 	.gr_name = "fake_name",
-	.gr_passwd = "x",
+	.gr_passwd = "*",
 	.gr_gid = -1,
 	.gr_mem = fake_mems
 };
@@ -193,7 +193,7 @@ getgrgid_impl(gid_t gid, struct group *grp)
 	else
 		grp->gr_name = fake_group_struct.gr_name;
 
-	grp->gr_passwd = "*"; /* not a required field */
+	grp->gr_passwd = "x"; /* not a required field */
 
 	grp->gr_gid = gid;
 
@@ -203,7 +203,7 @@ getgrgid_impl(gid_t gid, struct group *grp)
 struct group *
 getgrgid(gid_t gid)
 {
-	if (getenv("VERBOSE_LIBFAKE")) fprintf(stderr, "getgrgid() called with gid = %ld\n", (long));
+	if (getenv("VERBOSE_LIBFAKE")) fprintf(stderr, "getgrgid() called with gid = %ld\n", (long)gid);
 
 	getgrgid_impl(gid, &fake_group_struct);
 
@@ -223,7 +223,7 @@ int
 getgrgid_r(gid_t gid, struct group *grp, char *buffer,
 	size_t bufsize, struct group **result)
 {
-	if (getenv("VERBOSE_LIBFAKE")) fprintf(stderr, "getgrgid_r() called with gid = %ld\n", (long));
+	if (getenv("VERBOSE_LIBFAKE")) fprintf(stderr, "getgrgid_r() called with gid = %ld\n", (long)gid);
 
 	getgrgid_impl(gid, grp);
 
