@@ -22,7 +22,6 @@ int main()
     printf("got group gid: %ld\n", (long)getgrgid_result->gr_gid);
     printf("got group members: \n");
     char** p_members = getgrgid_result->gr_mem;
-printf("FTW: %ld, %ld, %ld\n", p_members, *p_members, **p_members);
     while ((*p_members) != NULL) printf("\t%s\n", *p_members++);
 
     return 0;

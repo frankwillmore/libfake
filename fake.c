@@ -136,16 +136,18 @@ getpwuid_r(uid_t uid, struct passwd *pwd, char *buffer,
 	and then flip the comma to a NULL so as to terminate each string */
 static void extract_members_and_stamp_terminators(char* members[], char* buffer)
 {
-	members[0] = buffer; 
-
 	/* Handle case of empty list */
-	if ((*buffer) == '\0') return;
+	if ((*buffer) == '\0')
+	{
+		members = NULL;
+		return;
+	}
 
 	/* otherwise we have at least one member */
 	int n_members = 1;
+	members[0] = buffer; 
 
 	char* p_char = buffer;
-	//while(*(++p_char) != '\0') 
 	while(*(p_char++) != '\0') 
 	if (*p_char == ',') 
 	{  
